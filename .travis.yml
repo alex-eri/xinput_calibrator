@@ -26,14 +26,13 @@ install:
 script:
   - docker run --rm -e PLAT=$PLAT -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/.travis/build-wheels.sh
   - ls wheelhouse/
+ 
 
-before_deploy:
-  - cd wheelhouse
-  
 deploy:
   provider: releases
-  file_glob: true
-  file: *.whl
+  api_key:
+    secure: "JwRIdvuD84B2TYLerKUIQ+GsWbtz7cUE5UsONnM2OoC23dz8PJOwhbSvDBCJ9Myt0YyQ2l+97uBVToYmsn4FXr5boHV+bQhrccfHQZsZ494yTwPR1QZyH2vvKCrBJCzPWbEXoP+/IgS5C9cqJs3/5WO04glaoqQb826jLQYRcMhkiXQhSt51mGlFI8a/O9uQ/IusdfucasAJfJL47483XXFOJ65WfwmJCTVcbb546mxdwoCPIhNvzYxnc77Kdy5WBtjQxe35KI4xottxzLSPHSSiqvNzW6FT4H9ZSuTkcRGqb0hA+kKYBrxIp34zmymZ9dRObWPlAudf6DrVCG6Tu/RjGDV74kX4vY0VZgT4q+bHgcBrRNGErfOh4H86j71NkZ1gZHYVEcn7QlqG7hdP7/919kmXs08Knm2aLKIX2SAwj6Y1UE92291MSB4Hv/cxacRO05XgL+hWl++T85Gw3mD8g2bGKPr5/L4roqkP1XBYhrOThjpY5Vcsb0ES+Y/Cg61ntM3Jytyyx+1d0Hd4xNj64v1wwrtSOkNPTq6UfVvlT97ZV8JGy2mYYTvMRBbH/0ixOnQVizkDUX/TixNOfYKNoYjeTRPD6CjXrXO5vFb7f1bVAP8e7m2XkBbf1r9J7DV7CndVcoCTpFORK2pfs3nBzfMDXOVxrusGs9+K4BA="
   skip_cleanup: true
-  on:
-    tags: true
+  draft: true
+  file_glob: true
+  file: wheelhouse/*.whl
