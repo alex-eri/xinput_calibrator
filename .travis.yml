@@ -36,3 +36,8 @@ deploy:
   draft: true
   file_glob: true
   file: wheelhouse/*.whl
+  on:
+    repo: alex-eri/xinput_calibrator
+    branches:
+      only:    
+        - main 
