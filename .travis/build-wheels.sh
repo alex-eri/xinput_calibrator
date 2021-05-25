@@ -17,7 +17,7 @@ function repair_wheel {
 # Compile wheels
 for PYBIN in /opt/python/cp3[5-9]*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements.txt
-    "${PYBIN}/pip" wheel /io/ --no-deps -w wheelhouse/
+    "${PYBIN}/pip" wheel /io/ --no-deps -w /io/wheelhouse/
 done
 
 # Bundle external shared libraries into the wheels
