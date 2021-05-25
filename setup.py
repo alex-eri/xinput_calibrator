@@ -8,7 +8,7 @@ setup(
     author_email="sa@eri.su",
     ext_modules = cythonize("xinput_calibrator/touch_calibrator.py", language_level=3),
     install_requires=[
-        'gi'
+        'PyGObject'
       ],
     scripts = [],
     # data_files=[
