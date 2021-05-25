@@ -1,3 +1,5 @@
+dist: focal
+
 notifications:
   email: false
 
@@ -26,7 +28,7 @@ install:
 script:
   - docker run --rm -e PLAT=$PLAT -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/.travis/build-wheels.sh
   - ls dist/
- 
+
 deploy:
   - provider: releases
     api_key:
@@ -43,5 +45,6 @@ deploy:
       secure: "dbaosAUciEnqpgbQfjATvnwGf0zFW2E99U5pGlpWbYbep1f0Ky0Z2C8BYmFMBpVStw+BVC+wBxSZGxnDTAz/dVnigKtS6BB1FKf4NzW2c7r+f6B0zQbuvFKahZ84FLHo9SNjyG8gRtp0Xr4v01rWjCOlJYy+dVDAu4T1xu3Jgc543fpyizHaZEDBeWSkjwABUmo4nScxqyzEIVZiSR8TkSPx3Nt37uO8HLfhc16/fTtK92GoU3OlXt00Chk0k/TVw9tIfn2lZ8QNIxOGrh12KkAVg5rkgWlZLvEtVpAkPyx7EOWE1KtMI/GgItC9OjXks3FCML4feOtZJrfQLBK0GQ39C2yDJUrCvXCJbMNCdyBMi7+jWtnGUs2YABVdHgJni0c4aQt98+qvL/JnKbHzBEgOHgvIm4QmX+7YOJxOYUK01qxwyRmINzmXXDaggkN/bO+bO+txNG71pWjjOBxAaWeVZY7lfOl+unJ4n84jcWu1aItWEUBb+WWZli3k5lnVFbch0C5y9AML/4bS5vVt9dGSVpzpSUi8SYOuf1woEgyqdY63WUSyh2I/4eFt3Gb6YRcOQXtaYAqQXpdZDiRlYr2SPBQE1ZyJZjUPTa41JQCZ8uJatuMysO7EMXAWApiQ4aNOrPwJm2UjgbmgCHTmCIKmOwydhjcAN53w2TCC0AM="
     skip_existing: true
     distributions: "sdist"
+
     on:
       tags: true
