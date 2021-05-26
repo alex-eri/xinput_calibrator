@@ -9,7 +9,7 @@ from pprint import pprint
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-gi.require_version("Glib", "2.0")
+
 from gi.repository import Gtk, Gdk, GLib
 
 class Matrix(list):
