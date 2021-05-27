@@ -13,10 +13,8 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 
 class Matrix(list):
-
     def __matmul__(a,b):
         return Matrix([[sum(ele_a*ele_b for ele_a, ele_b in zip(row_a, col_b)) for col_b in list(zip(*b))] for row_a in a])
-
     def __invert__(a):
         a = [ list(l) for l in a ]
         h = list(range(len(a)))
@@ -32,23 +30,18 @@ class Matrix(list):
                     a[i][j] = a[i][j] - crScaler * a[fd][j]
                     ia[i][j] = ia[i][j] - crScaler * ia[fd][j]
         return Matrix(ia)
-
     def __add__(a,b):
         return Matrix([[ i+j for i,j in zip(l,k) ] for l,k in zip(a,b)])
-
     def __truediv__(a,b):
         return Matrix( [[i/b for i in l] for l in a] )
-
     def flatten(a):
         return list(itertools.chain(*a))
-
     def __getitem__(a, i):
         if type(i) == int:
             return super().__getitem__(i)
         elif type(i) == tuple:
             y,x=i
             return a[y][x]
-
     def __setitem__(a, i, v):
         if type(i) == int:
             super().__setitem__(i, v)
@@ -57,7 +50,7 @@ class Matrix(list):
             a[y][x] = v
 
 class Calibrator():
-    def __init__(self, n=1, a=8):
+    def __init__(self, n=1, a=6):
         display = Gdk.Display.get_default()
         screen = display.get_default_screen()
 
@@ -79,7 +72,7 @@ class Calibrator():
         self.POINTS = {}
         self.MATRICES = {}
         self.DEVICES = {}
-        self.timer = GLib.Timer()
+        #self.timer = GLib.Timer()
 
         for m in range(display.get_n_monitors()):
             monitor = Gdk.Display.get_monitor(display, m)
@@ -108,7 +101,10 @@ class Calibrator():
                 draw.connect("draw", functools.partial(self.on_draw, m))
 
     def calculate(self, tp, did):
+        pprint(tp)
+
         sp = self.sp
+        pprint(sp)
         p = itertools.combinations(range(4),3)
         ca = []
         for p3 in p:
@@ -120,16 +116,22 @@ class Calibrator():
             ca.append(s @ ~t)
         c = functools.reduce(lambda a,b: a+b, ca)/len(ca)
         p5 = [[i] for i in list(tp[4])+[1]]
+        pprint(p5)
         cp5 = c @ p5
+        pprint(cp5)
         sw, sh = self.screen_size
         dx, dy = self.monitor_geometry.x/sw, self.monitor_geometry.y/sh # TODO check with dx, dy
         print(dx, dy)
-        c[0,1] *= sh/sw #b
-        c[0,2] *= 1/sw #c
-        c[0,2] += c[0,0] * dx + c[0,1] * dy - dx
-        c[1,0] *= sw/sh #d
-        c[1,2] *= 1/sh #f
-        c[1,2] += c[1,0] * dx + c[1,1] * dy - dy
+        pprint(c)
+
+        c[0,1] *= sh/sw # b
+        c[0,2] *= 1/sw # c
+        c[0,2] -= dx
+        c[0,2] += c[0,0] * dx + c[0,1] * dy
+        c[1,0] *= sw/sh # d
+        c[1,2] *= 1/sh # f
+        c[1,2] -= dy
+        c[1,2] += c[1,0] * dx + c[1,1] * dy
 
         matrix = c.flatten()
         delta = ((cp5[0][0]-sp[4][0])**2 + (cp5[1][0]-sp[4][1])**2)**(1/2)
@@ -167,14 +169,14 @@ ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % ('seat0', self.
 
     def draw_x(self, ctx, x, y, i):
         ctx.set_source_rgb(0.2, 0.2, 0.2)
-        ctx.move_to(x+10,y-10)
+        ctx.move_to(x+10, y-10)
         ctx.set_font_size(30)
         ctx.show_text(str(i+1))
         ctx.set_source_rgb(1, 0, 0)
-        ctx.move_to(x-10,y)
-        ctx.line_to(x+10,y)
-        ctx.move_to(x,y-10)
-        ctx.line_to(x,y+10)
+        ctx.move_to(x-10, y)
+        ctx.line_to(x+10, y)
+        ctx.move_to(x, y-10)
+        ctx.line_to(x, y+10)
 
     def redraw(self):
         for draw in self.draws:
@@ -212,6 +214,7 @@ ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % ('seat0', self.
         ctx.stroke()
 
     def on_click(self, widget, event):
+
         props = event.get_source_device().props
         did = props.device_id
         self.DEVICES[did] = {
@@ -224,7 +227,8 @@ ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % ('seat0', self.
             self.DEVICES[did]['hid'] = props.tool.get_hardware_id()
             self.DEVICES[did]['serial'] = props.tool.get_serial()
 
-        geom = self.monitor_geometry
+        geom = widget.props.window.get_geometry()
+        print(geom)
         x, y = geom.x + event.x, geom.y + event.y
         if not self.POINTS.get(did):
             self.POINTS[did]=[]
