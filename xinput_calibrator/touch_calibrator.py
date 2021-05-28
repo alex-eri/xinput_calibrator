@@ -4,6 +4,7 @@ import subprocess
 import json
 import itertools
 import functools
+import argparse
 
 from pprint import pprint
 
@@ -126,12 +127,12 @@ class Calibrator():
 
         c[0,1] *= sh/sw # b
         c[0,2] *= 1/sw # c
-        c[0,2] -= dx
-        c[0,2] += c[0,0] * dx + c[0,1] * dy
+        #c[0,2] -= dx
+        #c[0,2] += c[0,0] * dx + c[0,1] * dy
         c[1,0] *= sw/sh # d
         c[1,2] *= 1/sh # f
-        c[1,2] -= dy
-        c[1,2] += c[1,0] * dx + c[1,1] * dy
+        #c[1,2] -= dy
+        #c[1,2] += c[1,0] * dx + c[1,1] * dy
 
         matrix = c.flatten()
         delta = ((cp5[0][0]-sp[4][0])**2 + (cp5[1][0]-sp[4][1])**2)**(1/2)
@@ -245,7 +246,12 @@ ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % ('seat0', self.
 
 
 def entry_point():
-    c = Calibrator()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--monitor', help='Monitor', type=int, default=0)
+    parser.add_argument('--area', help='Place for calibration points. 10 - near corners, 6 - near center', type=int, default=8)
+    args = parser.parse_args()
+    assert args.area > 2, 'Area must be >2'
+    c = Calibrator(args.monitor, args.area)
     c.main()
 
 if __name__ == "__main__":
