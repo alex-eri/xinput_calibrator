@@ -51,9 +51,10 @@ class Matrix(list):
             a[y][x] = v
 
 class Calibrator():
-    def __init__(self, n=1, a=6):
+    def __init__(self, n=1, a=6, args):
         display = Gdk.Display.get_default()
         screen = display.get_default_screen()
+        self.args=args
 
         def get_screen_size(display):
             mon_geoms = [
@@ -139,12 +140,21 @@ class Calibrator():
         print(f"# Accuracy: {delta}")
         m = " ".join(map(lambda x: "%.10f" % x, matrix))
         cmd = 'xinput set-float-prop %d "libinput Calibration Matrix" \\\n %s' %  (did, m)
+        if self.args.save_xinput_num:
+            with open(self.args.save_xinput_num, w) as f:
+                f.write(cmd)
         print(cmd)
         cmd = 'xinput set-float-prop "%s" "libinput Calibration Matrix" \\\n %s' %  (self.DEVICES[did]['name'], m)
+        if self.args.save_xinput_name:
+            with open(self.args.save_xinput_name, w) as f:
+                f.write(cmd)
         print(cmd) # TODO save ~/.xsession
 
-        cmd = 'ACTION=="add|change", KERNEL=="event[0-9]*", ENV{ID_SEAT}=="%s", ENV{ID_VENDOR_ID}=="%s", \
-ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % ('seat0', self.DEVICES[did]['vid'], self.DEVICES[did]['pid'], m)
+        cmd = 'ACTION=="add|change", KERNEL=="event[0-9]*", ENV{ID_VENDOR_ID}=="%s", \
+ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % (self.DEVICES[did]['vid'], self.DEVICES[did]['pid'], m)
+        if self.args.save_udev_vendev:
+            with open(self.args.save_udev_vendev, w) as f:
+                f.write(cmd)
         print(cmd)  # TODO save as rule
                     # TODO set seat
 
@@ -249,9 +259,12 @@ def entry_point():
     parser = argparse.ArgumentParser()
     parser.add_argument('--monitor', help='Monitor', type=int, default=0)
     parser.add_argument('--area', help='Place for calibration points. 10 - near corners, 6 - near center', type=int, default=8)
+    parser.add_argument('--save-xinput-name', help='File to save xinput script by name', type=str)
+    parser.add_argument('--save-xinput-num', help='File to save xinput script by num', type=str)
+    parser.add_argument('--save-udev-vendev', help='File to save udev script by ven dev', type=str)
     args = parser.parse_args()
     assert args.area > 2, 'Area must be >2'
-    c = Calibrator(args.monitor, args.area)
+    c = Calibrator(args.monitor, args.area, args)
     c.main()
 
 if __name__ == "__main__":
