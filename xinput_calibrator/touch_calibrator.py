@@ -51,7 +51,7 @@ class Matrix(list):
             a[y][x] = v
 
 class Calibrator():
-    def __init__(self, n=1, a=6, args):
+    def __init__(self, n=1, a=6, args=None):
         display = Gdk.Display.get_default()
         screen = display.get_default_screen()
         self.args=args
@@ -140,19 +140,19 @@ class Calibrator():
         print(f"# Accuracy: {delta}")
         m = " ".join(map(lambda x: "%.10f" % x, matrix))
         cmd = 'xinput set-float-prop %d "libinput Calibration Matrix" \\\n %s' %  (did, m)
-        if self.args.save_xinput_num:
+        if self.args and self.args.save_xinput_num:
             with open(self.args.save_xinput_num, "w") as f:
                 f.write(cmd)
         print(cmd)
         cmd = 'xinput set-float-prop "%s" "libinput Calibration Matrix" \\\n %s' %  (self.DEVICES[did]['name'], m)
-        if self.args.save_xinput_name:
+        if self.args and self.args.save_xinput_name:
             with open(self.args.save_xinput_name, "w") as f:
                 f.write(cmd)
         print(cmd) # TODO save ~/.xsession
 
         cmd = 'ACTION=="add|change", KERNEL=="event[0-9]*", ENV{ID_VENDOR_ID}=="%s", \
 ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % (self.DEVICES[did]['vid'], self.DEVICES[did]['pid'], m)
-        if self.args.save_udev_vendev:
+        if self.args and self.args.save_udev_vendev:
             with open(self.args.save_udev_vendev, "w") as f:
                 f.write(cmd)
         print(cmd)  # TODO save as rule
