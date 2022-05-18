@@ -6,7 +6,8 @@ setup(
     name="touch_calibrator",
     version="1." + datetime.now().strftime('%Y%m%d'),
     author_email="sa@eri.su",
-    ext_modules = cythonize("xinput_calibrator/touch_calibrator.py", language_level=3),
+    py_modules = ['touch_calibrator'],
+    #ext_modules = cythonize("xinput_calibrator/touch_calibrator.py", language_level=3),
     install_requires=[
         'PyGObject'
       ],
