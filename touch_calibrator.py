@@ -5,8 +5,10 @@ import json
 import itertools
 import functools
 import argparse
+import sys
+import logging
 
-from pprint import pprint
+from pprint import pformat
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -52,6 +54,7 @@ class Matrix(list):
 
 class Calibrator():
     def __init__(self, n=1, a=6, args=None):
+        self.saved_accuracy = sys.maxsize
         display = Gdk.Display.get_default()
         screen = display.get_default_screen()
         self.args=args
@@ -103,10 +106,10 @@ class Calibrator():
                 draw.connect("draw", functools.partial(self.on_draw, m))
 
     def calculate(self, tp, did):
-        pprint(tp)
+        logging.debug(pformat(tp))
 
         sp = self.sp
-        pprint(sp)
+        logging.debug(pformat(sp))
         p = itertools.combinations(range(4),3)
         ca = []
         for p3 in p:
@@ -114,17 +117,17 @@ class Calibrator():
             tp2 = [tp[i] for i in p3]
             s = Matrix( list(zip(*sp2))+ [(1,1,1)] )
             t = Matrix( list(zip(*tp2))+ [(1,1,1)] )
-            print(s)
+            logging.debug(s)
             ca.append(s @ ~t)
         c = functools.reduce(lambda a,b: a+b, ca)/len(ca)
         p5 = [[i] for i in list(tp[4])+[1]]
-        pprint(p5)
+        logging.debug(pformat(p5))
         cp5 = c @ p5
-        pprint(cp5)
+        logging.debug(pformat(cp5))
         sw, sh = self.screen_size
         dx, dy = self.monitor_geometry.x/sw, self.monitor_geometry.y/sh # TODO check with dx, dy
-        print(dx, dy)
-        pprint(c)
+        logging.debug((dx, dy))
+        logging.debug(pformat(c))
 
         c[0,1] *= sh/sw # b
         c[0,2] *= 1/sw # c
@@ -137,25 +140,34 @@ class Calibrator():
 
         matrix = c.flatten()
         delta = ((cp5[0][0]-sp[4][0])**2 + (cp5[1][0]-sp[4][1])**2)**(1/2)
-        print(f"# Accuracy: {delta}")
+        logging.debug(f"# Accuracy: {delta}")
+
         m = " ".join(map(lambda x: "%.10f" % x, matrix))
         cmd = 'xinput set-float-prop %d "libinput Calibration Matrix" \\\n %s' %  (did, m)
         if self.args and self.args.save_xinput_num:
-            with open(self.args.save_xinput_num, "w") as f:
-                f.write(cmd)
-        print(cmd)
+            if self.saved_accuracy > delta:
+                self.saved_accuracy = delta
+                with open(self.args.save_xinput_num, "w") as f:
+                    f.write(cmd)
+
+        logging.debug(cmd)
         cmd = 'xinput set-float-prop "%s" "libinput Calibration Matrix" \\\n %s' %  (self.DEVICES[did]['name'], m)
         if self.args and self.args.save_xinput_name:
-            with open(self.args.save_xinput_name, "w") as f:
-                f.write(cmd)
-        print(cmd) # TODO save ~/.xsession
+            if self.saved_accuracy > delta:
+                self.saved_accuracy = delta
+                with open(self.args.save_xinput_name, "w") as f:
+                    f.write(cmd)
+
+        logging.debug(cmd) # TODO save ~/.xsession
 
         cmd = 'ACTION=="add|change", KERNEL=="event[0-9]*", ENV{ID_VENDOR_ID}=="%s", \
 ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % (self.DEVICES[did]['vid'], self.DEVICES[did]['pid'], m)
         if self.args and self.args.save_udev_vendev:
-            with open(self.args.save_udev_vendev, "w") as f:
-                f.write(cmd)
-        print(cmd)  # TODO save as rule
+            if self.saved_accuracy > delta:
+                self.saved_accuracy = delta
+                with open(self.args.save_udev_vendev, "w") as f:
+                    f.write(cmd)
+        logging.debug(cmd)  # TODO save as rule
                     # TODO set seat
 
         """
@@ -239,7 +251,7 @@ ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % (self.DEVICES[d
             self.DEVICES[did]['serial'] = props.tool.get_serial()
 
         geom = widget.props.window.get_geometry()
-        print(geom)
+        logging.debug(geom)
         x, y = geom.x + event.x, geom.y + event.y
         if not self.POINTS.get(did):
             self.POINTS[did]=[]
@@ -254,6 +266,8 @@ ENV{ID_MODEL_ID}=="%s", ENV{LIBINPUT_CALIBRATION_MATRIX}="%s"' % (self.DEVICES[d
             win.show_all()
         Gtk.main()
 
+    
+
 
 def entry_point():
     parser = argparse.ArgumentParser()
@@ -261,9 +275,13 @@ def entry_point():
     parser.add_argument('--area', help='Place for calibration points. 10 - near corners, 6 - near center', type=int, default=8)
     parser.add_argument('--save-xinput-name', help='File to save xinput script by name', type=str)
     parser.add_argument('--save-xinput-num', help='File to save xinput script by num', type=str)
-    parser.add_argument('--save-udev-vendev', help='File to save udev script by ven dev', type=str)
+    parser.add_argument('--save-udev-vendev', help='File to save udev rule by ven dev', type=str)
+    parser.add_argument('-d','--debug', action='store_true')
+    parser.add_argument('-r','--last', type=bool)
     args = parser.parse_args()
     assert args.area > 2, 'Area must be >2'
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
     c = Calibrator(args.monitor, args.area, args)
     c.main()
 
